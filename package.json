@@ -1,0 +1,26 @@
+{
+  "name": "team",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rsbuild build",
+    "dev": "rsbuild dev --open",
+    "preview": "rsbuild preview"
+  },
+  "dependencies": {
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-router-dom": "6.28.0",
+    "lucide-react": "0.553.0"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^1.6.3",
+    "@rsbuild/plugin-react": "^1.4.2",
+    "@module-federation/enhanced": "^0.21.4",
+    "@tailwindcss/postcss": "^4.1.17",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@types/node": "^24.10.1"
+  }
+}
