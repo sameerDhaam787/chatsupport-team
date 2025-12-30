@@ -38,10 +38,10 @@ export default defineConfig({
           },
 
           shared: {
-            react: { singleton: true, eager: true },
-            'react-dom': { singleton: true, eager: true },
-            'react-router-dom': { singleton: true, eager: true },
-            'lucide-react': { singleton: true, eager: true },
+            react: { singleton: true, eager: true, requiredVersion: '19.2.0' },
+            'react-dom': { singleton: true, eager: true, requiredVersion: '19.2.0' },
+            'react-router-dom': { singleton: true, eager: true, requiredVersion: '6.28.0' },
+            'lucide-react': { singleton: true, eager: true, requiredVersion: '0.553.0' },
           },
 
           dts: false,

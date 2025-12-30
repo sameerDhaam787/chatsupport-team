@@ -53,9 +53,9 @@ const TeamList = () => {
       </div>
 
       {/* Team Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex flex-wrap gap-6" style={{ display: 'flex' }}>
         {teamMembers.map((member) => (
-          <div key={member.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+          <div key={member.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow" style={{ flex: '1 1 calc(33.333% - 16px)', minWidth: '300px' }}>
             {/* Avatar & Status */}
             <div className="flex items-start justify-between mb-4">
               <div className="relative">

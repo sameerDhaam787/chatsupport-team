@@ -1,0 +1,1065 @@
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAgentDetail, fetchAgentTickets } from '../store/agentSlice';
+import type { RootState } from '../store/store';
+import {
+  ArrowLeft,
+  Mail,
+  Phone,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  TrendingUp,
+  Award,
+  Calendar,
+  MessageSquare,
+  Star,
+  Users,
+  Activity,
+  BarChart3,
+  Edit,
+  Copy,
+  Trash2,
+  Bot,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+
+
+import AgentDetailSkeleton from "./AgentDetailSkeleton";
+
+interface Agent {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  role: string;
+  team: string;
+  status: string;
+  avatar: string;
+  ticketsClosed: number;
+  avgResponseTime: string;
+  performanceScore: number;
+  agent_rating?: number;
+}
+
+
+
+interface AgentDetail {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  role: string;
+  team: string;
+  status: string;
+  avatar: string;
+  ticketsClosed: number;
+  avgResponseTime: string;
+  performanceScore: number;
+  agent_rating: number;
+}
+
+const AgentDetail = ({
+  agent,
+  onClose,
+}: {
+  agent: Agent;
+  onClose: () => void;
+}) => {
+
+  // Redux: fetch agent detail on mount
+  const dispatch = useDispatch();
+  const { agentDetail, agentDetailLoading, agentDetailError, agentTickets, agentTicketsTotal, agentTicketsLoading, agentTicketsError } = useSelector((state: RootState) => state.agents);
+
+  // Debug: Log loading state changes
+  useEffect(() => {
+    console.log('[AgentDetail] agentDetailLoading:', agentDetailLoading, 'agentTicketsLoading:', agentTicketsLoading);
+    if (agentDetailLoading || agentTicketsLoading) {
+      console.log('[AgentDetail] Rendering AgentDetailSkeleton');
+    }
+  }, [agentDetailLoading, agentTicketsLoading]);
+
+  // Ticket table state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [ticketsPerPage, setTicketsPerPage] = useState(10);
+  const [animateProgress, setAnimateProgress] = useState(false);
+
+  // Fetch agent detail on mount or when agent changes
+  useEffect(() => {
+    dispatch(fetchAgentDetail({ agent_id: agent.id, app_id: 'fastapi-6222d6' }) as any);
+  }, [agent.id, dispatch]);
+
+  // Fetch tickets when agent or ticket table state changes
+  useEffect(() => {
+    dispatch(fetchAgentTickets({ agent_id: agent.id, app_id: 'fastapi-6222d6', page: currentPage, limit: ticketsPerPage, search: searchQuery, status: statusFilter !== 'All' ? [statusFilter] : [] }) as any);
+  }, [agent.id, currentPage, ticketsPerPage, searchQuery, statusFilter, dispatch]);
+
+  // Use agentDetail from Redux if available, otherwise fallback to prop
+  const displayAgent = agentDetail || agent;
+
+  // Use real tickets from Redux
+  const tickets = agentTickets || [];
+  const totalTickets = agentTicketsTotal || 0;
+  const totalPages = Math.max(1, Math.ceil(totalTickets / ticketsPerPage));
+  const startIndex = (currentPage - 1) * ticketsPerPage;
+  const endIndex = Math.min(startIndex + ticketsPerPage, totalTickets);
+  // API already paginates, so use tickets as-is for current page
+  const currentTickets = tickets;
+
+  useEffect(() => {
+    // Trigger animation after component mounts
+    const timer = setTimeout(() => {
+      setAnimateProgress(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      Active: "bg-green-50 text-green-700 border-green-200",
+      Inactive: "bg-gray-100 text-gray-700 border-gray-300",
+      "On Leave": "bg-orange-50 text-orange-700 border-orange-200",
+    };
+    return colors[status] || colors.Active;
+  };
+
+  const getTicketStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      Open: "bg-blue-100 text-blue-700",
+      "In Progress": "bg-yellow-100 text-yellow-700",
+      Resolved: "bg-green-100 text-green-700",
+      Closed: "bg-gray-100 text-gray-700",
+    };
+    return colors[status] || "bg-gray-100 text-gray-700";
+  };
+
+  const getPriorityColor = (priority: string) => {
+    const colors: Record<string, string> = {
+      Urgent: "bg-red-100 text-red-700",
+      High: "bg-orange-100 text-orange-700",
+      Medium: "bg-yellow-100 text-yellow-700",
+      Low: "bg-blue-100 text-blue-700",
+    };
+    return colors[priority] || "bg-gray-100 text-gray-700";
+  };
+
+
+ if (agentDetailLoading || agentTicketsLoading) {
+  return <AgentDetailSkeleton />;
+}
+
+  return (
+    <div className="h-full bg-white flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto p-6">
+        {/* Header Section - Premium Design */}
+   {/* Premium Updated Header */}
+<div className="bg-white shadow-xl rounded-2xl border border-gray-200 overflow-hidden mb-6">
+  {/* Top Background Gradient */}
+  <div className="bg-gradient-to-r from-indigo-50 via-white to-indigo-50 px-8 pt-8 pb-6">
+    {/* Back Button */}
+    <button
+      onClick={onClose}
+      className="absolute top-8 left-8 z-10 w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white/90 rounded-full border border-gray-200 shadow-sm transition"
+    >
+      <ArrowLeft className="w-5 h-5" />
+    </button>
+
+    <div className="flex items-center gap-6 ml-12">
+      {/* Profile Avatar */}
+      <div className="relative">
+        <img
+          src={agent.avatar}
+          alt={agent.name}
+          className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
+        />
+        <span className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+          <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+        </span>
+      </div>
+
+      {/* Name & Details */}
+      <div className="flex-1">
+        <h1 className="text-3xl font-semibold text-gray-900">
+          {agent.name}
+        </h1>
+        <p className="text-sm text-gray-600 mt-1">
+          {agent.role}
+        </p>
+
+        <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Joined Jan 15, 2024</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span>Last Active: 2h ago</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        <button className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition">
+          <Edit className="w-4 h-4" />
+          Edit
+        </button>
+        <button className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition">
+          <Copy className="w-4 h-4" />
+          Duplicate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {/* Contact Info Bar */}
+  <div className="px-8 py-4 bg-white border-t border-gray-200 backdrop-blur-sm flex items-center gap-8 justify-start ml-12">
+    <div className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 transition cursor-pointer">
+      <Mail className="w-4 h-4 text-indigo-500" />
+      <span>{agent.email}</span>
+    </div>
+    <div className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 transition cursor-pointer">
+      <Phone className="w-4 h-4 text-indigo-500" />
+      <span>{agent.phone}</span>
+    </div>
+    <div className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 transition cursor-pointer">
+      <MapPin className="w-4 h-4 text-indigo-500" />
+      <span>{agent.location}</span>
+    </div>
+  </div>
+</div>
+
+        {/* Stats Grid - 4 Cards with hover animations */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg hover:border-purple-200 transition-all duration-300 group">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center group-hover:shadow-lg transition-all">
+                <CheckCircle2 className="w-6 h-6 text-purple-600" />
+              </div>
+              <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full">
+                +12%
+              </span>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">
+              {displayAgent.ticketsClosed}
+            </div>
+            <div className="text-sm text-gray-600">Tickets Closed</div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-300 group">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center group-hover:shadow-lg transition-all">
+                <Clock className="w-6 h-6 text-blue-600" />
+              </div>
+              <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full">
+                -8%
+              </span>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">
+              {displayAgent.avgResponseTime}
+            </div>
+            <div className="text-sm text-gray-600">Avg Response Time</div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg hover:border-amber-200 transition-all duration-300 group">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center group-hover:shadow-lg transition-all">
+                <Star className="w-6 h-6 text-amber-600" />
+              </div>
+              <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full">
+                +5%
+              </span>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{displayAgent.agent_rating}</div>
+            <div className="text-sm text-gray-600">Customer Rating</div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg hover:border-green-200 transition-all duration-300 group">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center group-hover:shadow-lg transition-all">
+                <Award className="w-6 h-6 text-green-600" />
+              </div>
+              <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1 rounded-full">
+                Top 10%
+              </span>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">
+              {displayAgent.performanceScore}%
+            </div>
+            <div className="text-sm text-gray-600">Performance Score</div>
+          </div>
+        </div>
+
+        {/* Main Grid Layout - New structure with original styling */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - 2/3 width */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Agent Tickets Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              {/* Header with Search and Filters */}
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Agent Tickets
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {agentTicketsLoading ? 'Loading tickets...' : `${totalTickets} ticket${totalTickets !== 1 ? 's' : ''} found`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search tickets..."
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Status Filter */}
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => {
+                        setStatusFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                    >
+                      <option value="All">All Status</option>
+                      <option value="Open">Open</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Resolved">Resolved</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div
+                className="overflow-x-auto"
+                style={{ maxHeight: "500px", overflowY: "auto" }}
+              >
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gradient-to-r from-purple-100/80 to-indigo-100/80 backdrop-blur-sm border-b border-purple-200/50">
+                    <tr>
+                      <th className="px-6 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Ticket ID
+                      </th>
+                      <th className="px-6 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Subject
+                      </th>
+                      <th className="px-6 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Priority
+                      </th>
+                      <th className="px-6 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {agentTicketsLoading ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <Search className="w-12 h-12 text-gray-300 animate-spin" />
+                            <p className="text-gray-500 text-sm">Loading tickets...</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : agentTicketsError ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <XCircle className="w-12 h-12 text-red-300" />
+                            <p className="text-red-500 text-sm">{agentTicketsError}</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : currentTickets.length > 0 ? (
+                      currentTickets.map((ticket, i) => (
+                        <tr
+                          key={ticket.ticket_id || ticket.id || i}
+                          className="hover:bg-purple-50/30 transition-colors cursor-pointer"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-semibold text-purple-600">
+                              {ticket.ticket_id || ticket.id}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                                {(ticket.customer_name || ticket.customer || '').charAt(0) || '?'}
+                              </div>
+                              <span className="text-sm text-gray-900">
+                                {ticket.customer_name || ticket.customer || 'N/A'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {ticket.subject || ticket.title || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                ticket.priority === "Urgent"
+                                  ? "bg-red-100 text-red-700"
+                                  : ticket.priority === "High"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : ticket.priority === "Medium"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {ticket.priority || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
+                                ticket.status === "Open"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : ticket.status === "In Progress"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : ticket.status === "Resolved"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {ticket.status === "Open" && (
+                                <AlertCircle className="w-3 h-3" />
+                              )}
+                              {ticket.status === "In Progress" && (
+                                <Clock className="w-3 h-3" />
+                              )}
+                              {ticket.status === "Resolved" && (
+                                <CheckCircle className="w-3 h-3" />
+                              )}
+                              {ticket.status === "Closed" && (
+                                <XCircle className="w-3 h-3" />
+                              )}
+                              {ticket.status || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {ticket.created_at ? new Date(ticket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <Search className="w-12 h-12 text-gray-300" />
+                            <p className="text-gray-500 text-sm">
+                              No tickets found
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-600">
+                      Showing <span className="font-semibold">{startIndex + 1}</span> to <span className="font-semibold">{endIndex}</span> of <span className="font-semibold">{totalTickets}</span> tickets
+                    </div>
+                    <select
+                      value={ticketsPerPage}
+                      onChange={(e) => {
+                        setTicketsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                    >
+                      <option value={5}>5 per page</option>
+                      <option value={10}>10 per page</option>
+                      <option value={25}>25 per page</option>
+                      <option value={50}>50 per page</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                      }
+                      disabled={currentPage === 1}
+                      className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {[...Array(totalPages)]
+                        .slice(
+                          Math.max(0, currentPage - 2),
+                          Math.min(totalPages, currentPage + 1)
+                        )
+                        .map((_, idx) => {
+                          const pageNum =
+                            Math.max(0, currentPage - 2) + idx + 1;
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                                currentPage === pageNum
+                                  ? "bg-purple-600 text-white"
+                                  : "border border-gray-300 hover:bg-white text-gray-700"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                    </div>
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Overview Chart - Original styling */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">
+                    Performance Overview
+                  </h3>
+                  <p className="text-xs text-gray-500">Last 7 Days</p>
+                </div>
+                <div className="flex gap-1">
+                  <button className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
+                    7 Days
+                  </button>
+                  <button className="px-3 py-1.5 bg-white text-gray-600 rounded-lg text-xs font-medium border border-gray-200 hover:bg-gray-50">
+                    30 Days
+                  </button>
+                  <button className="px-3 py-1.5 bg-white text-gray-600 rounded-lg text-xs font-medium border border-gray-200 hover:bg-gray-50">
+                    90 Days
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-6 relative" style={{ height: "280px" }}>
+                {/* Y-axis labels (left) */}
+                <div className="absolute left-0 top-0 bottom-10 flex flex-col justify-between text-xs text-gray-400 font-medium">
+                  <span>300</span>
+                  <span>250</span>
+                  <span>200</span>
+                  <span>150</span>
+                  <span>100</span>
+                  <span>50</span>
+                  <span>0</span>
+                </div>
+
+                {/* Chart area */}
+                <div className="ml-10 mr-6 h-full relative">
+                  {/* Grid lines */}
+                  <div className="absolute inset-0 flex flex-col justify-between pb-10">
+                    {[...Array(7)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-full border-t border-gray-100"
+                      ></div>
+                    ))}
+                  </div>
+
+                  {/* Purple area fill */}
+                  <svg
+                    className="absolute inset-0 w-full"
+                    style={{ height: "calc(100% - 40px)" }}
+                    viewBox="0 0 700 300"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="purpleGradient"
+                        x1="0%"
+                        y1="0%"
+                        x2="0%"
+                        y2="100%"
+                      >
+                        <stop
+                          offset="0%"
+                          style={{ stopColor: "#a855f7", stopOpacity: 0.3 }}
+                        />
+                        <stop
+                          offset="100%"
+                          style={{ stopColor: "#a855f7", stopOpacity: 0.05 }}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 0,75 L 100,45 L 200,15 L 300,30 L 400,15 L 500,90 L 600,120 L 700,120 L 700,300 L 0,300 Z"
+                      fill="url(#purpleGradient)"
+                    />
+                    <path
+                      d="M 0,75 L 100,45 L 200,15 L 300,30 L 400,15 L 500,90 L 600,120"
+                      fill="none"
+                      stroke="#a855f7"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    {[0, 100, 200, 300, 400, 500, 600].map((x, i) => (
+                      <circle
+                        key={i}
+                        cx={x}
+                        cy={[75, 45, 15, 30, 15, 90, 120][i]}
+                        r="4"
+                        fill="#a855f7"
+                      />
+                    ))}
+                  </svg>
+
+                  {/* Cyan line overlay */}
+                  <svg
+                    className="absolute inset-0 w-full"
+                    style={{ height: "calc(100% - 40px)" }}
+                    viewBox="0 0 700 300"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M 0,180 L 100,240 L 200,120 L 300,135 L 400,105 L 500,45 L 600,15"
+                      fill="none"
+                      stroke="#06b6d4"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    {[0, 100, 200, 300, 400, 500, 600].map((x, i) => (
+                      <circle
+                        key={i}
+                        cx={x}
+                        cy={[180, 240, 120, 135, 105, 45, 15][i]}
+                        r="4"
+                        fill="#06b6d4"
+                      />
+                    ))}
+                  </svg>
+
+                  {/* X-axis labels */}
+                  <div className="absolute bottom-0 left-0 right-0 flex justify-between items-center px-1">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+                      (day) => (
+                        <span
+                          key={day}
+                          className="text-xs text-gray-600 font-medium"
+                        >
+                          {day}
+                        </span>
+                      )
+                    )}
+                  </div>
+
+                  {/* Right Y-axis labels */}
+                  <div className="absolute right-0 top-0 bottom-10 flex flex-col justify-between text-xs text-gray-400 font-medium items-end">
+                    <span>3</span>
+                    <span></span>
+                    <span>2.8</span>
+                    <span></span>
+                    <span>2.6</span>
+                    <span></span>
+                    <span>2.4</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flex items-center justify-start gap-4 mt-3 ml-10">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
+                  <span className="text-xs text-gray-600">Open Tickets</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-cyan-500 rounded-sm"></div>
+                  <span className="text-xs text-gray-600">
+                    Resolved Tickets
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Conversations - Original styling */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900">
+                  Recent Conversations
+                </h3>
+                <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  View All
+                </button>
+              </div>
+              <div className="space-y-3">
+                {/* Feedback Item 1 */}
+                <div className="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="https://i.pravatar.cc/150?img=8"
+                      className="w-10 h-10 rounded-full"
+                      alt="John Doe"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-gray-900 text-sm">
+                          John Doe
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          2 hours ago
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className="w-3 h-3 fill-yellow-400 text-yellow-400"
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        "Sarah was incredibly helpful and resolved my payment
+                        issue quickly. Excellent service!"
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Feedback Item 2 */}
+                <div className="border-l-4 border-blue-500 bg-blue-50 rounded-r-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="https://i.pravatar.cc/150?img=9"
+                      className="w-10 h-10 rounded-full"
+                      alt="Emma Wilson"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-gray-900 text-sm">
+                          Emma Wilson
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          5 hours ago
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {[...Array(4)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className="w-3 h-3 fill-yellow-400 text-yellow-400"
+                          />
+                        ))}
+                        <Star className="w-3 h-3 text-gray-300" />
+                      </div>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        "Very professional and knowledgeable. Helped me set up
+                        my account step by step."
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Feedback Item 3 */}
+                <div className="border-l-4 border-purple-500 bg-purple-50 rounded-r-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="https://i.pravatar.cc/150?img=10"
+                      className="w-10 h-10 rounded-full"
+                      alt="Michael Brown"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-gray-900 text-sm">
+                          Michael Brown
+                        </span>
+                        <span className="text-xs text-gray-500">Yesterday</span>
+                      </div>
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className="w-3 h-3 fill-yellow-400 text-yellow-400"
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        "Outstanding support! Sarah went above and beyond to
+                        solve my technical issue."
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Skills & Expertise */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                Skills & Expertise
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium">
+                  Technical Support
+                </span>
+                <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
+                  Customer Service
+                </span>
+                <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
+                  Problem Solving
+                </span>
+                <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium">
+                  Product Knowledge
+                </span>
+                <span className="px-3 py-1.5 bg-pink-100 text-pink-700 rounded-lg text-sm font-medium">
+                  Communication
+                </span>
+                <span className="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium">
+                  Billing Support
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - 1/3 width with original styling */}
+          <div className="space-y-6">
+            {/* Today's Schedule Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                Today's Schedule
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-gray-900">
+                      09:00 AM
+                    </div>
+                    <div className="text-xs text-gray-600">Shift Start</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-gray-900">
+                      NOW
+                    </div>
+                    <div className="text-xs text-gray-900 font-medium">
+                      Active Support
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Handling 3 customer chats
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-gray-900">
+                      01:00 PM
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Lunch Break (30m)
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-gray-900">
+                      05:00 PM
+                    </div>
+                    <div className="text-xs text-gray-600">Shift End</div>
+                  </div>
+                </div>
+              </div>
+              <button className="w-full mt-4 text-sm text-purple-600 hover:text-purple-700 font-medium">
+                View Full Calendar
+              </button>
+            </div>
+
+            {/* Internal Notes Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">
+                  Internal Notes
+                </h3>
+                <button className="text-purple-600 hover:text-purple-700 text-sm font-medium">
+                  + Add
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <div className="text-xs font-semibold text-yellow-800 mb-1">
+                    Attention Required
+                  </div>
+                  <div className="text-xs text-gray-700 mb-2">
+                    Needs training on the new Billing Module v2.0. Update
+                    scheduled for next week.
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Added by Alex Admin • 2d ago
+                  </div>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="text-xs font-semibold text-green-800 mb-1">
+                    Excellent Feedback
+                  </div>
+                  <div className="text-xs text-gray-700 mb-2">
+                    Excellent handling of the VIP client issue on Monday.
+                    Escalated to billing.
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Added by Team Lead • 5d ago
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Metrics */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-purple-600" />
+                Performance Metrics
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-gray-600">Tickets Resolved</span>
+                    <span className="font-semibold text-gray-900">92%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-purple-600 to-purple-400 h-2 rounded-full"
+                      style={{ width: "92%" }}
+                    ></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-gray-600">Response Time</span>
+                    <span className="font-semibold text-gray-900">88%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-blue-600 to-blue-400 h-2 rounded-full"
+                      style={{ width: "88%" }}
+                    ></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-gray-600">Customer Satisfaction</span>
+                    <span className="font-semibold text-gray-900">96%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-green-600 to-green-400 h-2 rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: animateProgress ? "0%" : "96%" }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Team Information */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-600" />
+                Team Information
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Department</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {agent.team}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Manager</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    Sarah Johnson
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Team Members</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    12
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-600">Work Schedule</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    9 AM - 5 PM
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* System Status Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                System Status
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-700">
+                      Windows 11 Pro
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500">Desktop App v4.2.1</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AgentDetail;

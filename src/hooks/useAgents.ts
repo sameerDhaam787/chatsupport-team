@@ -1,95 +1,96 @@
 // hooks/useAgents.ts
-import { useState, useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAgents, setSearch, setPage, setLimit } from '../store/agentSlice';
+import type { RootState, AppDispatch } from '../store/store';
 
-// Define the Agent type for better typing
+// Define the Agent type for better typing (mapped from API response)
 export interface Agent {
-  id: string;
-  avatar: string; // Dummy image URL
+  id: string; // Maps from agent_id
+  avatar: string; // Maps from profile_picture
   name: string;
-  role: 'Sales' | 'Support' | 'Tech' | 'Manager';
-  team: string;
+  role: string; // No role in API, use fallback
+  team: string; // No team in API, use fallback
   email: string;
-  phone: string;
-  location: string;
-  status: 'Active' | 'On Leave' | 'Training' | 'New';
-  ticketsClosed: number;
-  avgResponseTime: string; // e.g., '3m 20s'
-  performanceScore: number; // 0-100
+  phone: string; // Maps from contact_no
+  location: string; // Maps from address
+  account_status: string; // Maps from account_status
+  ticketsClosed: number; // Maps from tickets_count
+  avgResponseTime: string;
+  performanceScore: number; // Maps from performance_score
+  specialties: string[];
+  rate: number;
+  availability: any;
+  lastActive?: string; // Maps from last_active
+  ticketsData?: any[]; // Raw tickets from API
 }
 
-// Generate dummy agent data
-const createDummyAgents = (count: number): Agent[] => {
-  const roles: Agent['role'][] = ['Sales', 'Support', 'Tech', 'Manager'];
-  const teams = ['Alpha', 'Beta', 'Gamma', 'Delta'];
-  const statuses: Agent['status'][] = ['Active', 'On Leave', 'Training', 'New'];
-
-  return Array.from({ length: count }, (_, i) => ({
-    id: `A${1000 + i}`,
-    avatar: `https://i.pravatar.cc/150?img=${i + 1}`, // Dummy avatars
-    name: `Agent Name ${i + 1}`,
-    role: roles[i % roles.length],
-    team: teams[i % teams.length],
-    email: `agent${i + 1}@example.com`,
-    phone: `+1 555-00${1000 + i}`,
-    location: i % 3 === 0 ? 'Remote' : 'Office A',
-    status: statuses[i % statuses.length],
-    ticketsClosed: Math.floor(Math.random() * 200) + 50,
-    avgResponseTime: `${Math.floor(Math.random() * 10) + 1}m ${Math.floor(Math.random() * 59) + 1}s`,
-    performanceScore: Math.floor(Math.random() * 40) + 60, // 60-100
-  }));
-};
-
-const initialAgents: Agent[] = createDummyAgents(100);
-
-// Mock useAgents hook
+// useAgents hook that uses Redux
 const useAgents = () => {
-  const [agents, setAgents] = useState<Agent[]>(initialAgents.slice(0, 10));
-    // Add agent function
-    const addAgent = (agent: Agent) => {
-      setAgents(prev => [agent, ...prev]);
-      setTotal(prev => prev + 1);
-    };
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(initialAgents.length);
-  const [search, setSearch] = useState('');
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    agents: reduxAgents,
+    loading,
+    error,
+    page,
+    limit,
+    total,
+    search,
+    filters: { account_status: statusFilter },
+  } = useSelector((state: RootState) => state.agents);
 
-  const load = ({ page: newPage = page, limit: newLimit = limit, status = [], role = [] }: { page?: number, limit?: number, status?: string[], role?: string[] } = {}) => {
-    setLoading(true);
-    setPage(newPage);
-    setLimit(newLimit);
-    setError(null);
-    
-    // Simulate API delay
-    setTimeout(() => {
-      let filtered = initialAgents.filter(agent => {
-        const matchesSearch = agent.name.toLowerCase().includes(search.toLowerCase()) || 
-                              agent.email.toLowerCase().includes(search.toLowerCase());
-        const matchesStatus = status.length === 0 || status.includes(agent.status.toLowerCase());
-        const matchesRole = role.length === 0 || role.includes(agent.role.toLowerCase());
-        if (role.includes('manager')) {
-          return matchesSearch && agent.role.toLowerCase() === 'manager';
-        }
-        return matchesSearch && matchesStatus && matchesRole;
-      });
-
-      setTotal(filtered.length);
-      const startIndex = (newPage - 1) * newLimit;
-      const endIndex = startIndex + newLimit;
-      
-      setAgents(filtered.slice(startIndex, endIndex));
-      setLoading(false);
-    }, 500);
-  };
-
-  // Re-load data when search changes
+  // Load agents on mount or when pagination/filters change
   useEffect(() => {
-    load({ page: 1, limit });
-  }, [search, limit]); // Added limit to dependency array for correct initial load
+    dispatch(fetchAgents({ page, limit, search, account_status: statusFilter }));
+  }, [dispatch, page, limit, search, statusFilter]);
 
-  return { agents, loading, error, load, page, limit, total, search, setSearch, addAgent };
+  // Handle search input
+  const handleSearch = useCallback((searchTerm: string) => {
+    dispatch(setSearch(searchTerm));
+    dispatch(setPage(1)); // Reset to first page on search
+  }, [dispatch]);
+
+  // Handle pagination
+  const handlePageChange = useCallback((newPage: number) => {
+    dispatch(setPage(newPage));
+  }, [dispatch]);
+
+  // Handle limit change
+  const handleLimitChange = useCallback((newLimit: number) => {
+    dispatch(setLimit(newLimit));
+    dispatch(setPage(1)); // Reset to first page on limit change
+  }, [dispatch]);
+
+  // Mock add agent function (for now)
+  const addAgent = useCallback((agent: Agent) => {
+    // This would need to call an API in the future
+    console.log('Add agent:', agent);
+  }, []);
+
+  // Mock load function for backward compatibility
+  const load = useCallback(({ page: newPage = page, limit: newLimit = limit }: { page?: number; limit?: number } = {}) => {
+    if (newPage !== page) {
+      dispatch(setPage(newPage));
+    }
+    if (newLimit !== limit) {
+      dispatch(setLimit(newLimit));
+    }
+  }, [dispatch, page, limit]);
+
+  return {
+    agents: reduxAgents,
+    loading,
+    error,
+    load,
+    page,
+    limit,
+    total,
+    search,
+    setSearch: handleSearch,
+    addAgent,
+    setPage: handlePageChange,
+    setLimit: handleLimitChange,
+  };
 };
 
 export default useAgents;
